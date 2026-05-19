@@ -2,13 +2,16 @@ import { fetchDay, type ParsedRecord } from "./agmarknet";
 import { sql } from "./db";
 import { invalidatePrefix } from "./ratelimit";
 import { buildDailySummary } from "./aggregate";
+import { FOCUS_STATE } from "./focus";
 
 const BATCH = 1000;
 
 export type IngestResult = {
   date: string;
   actual_dates: string[];
+  focus_state: string | null;
   fetched: number;
+  dropped_by_focus: number;
   inserted: number;
   skipped: number;
   durationMs: number;
@@ -65,23 +68,29 @@ export async function ingestDate(target: Date): Promise<IngestResult> {
 
   try {
     const { valid, skipped } = await fetchDay(target);
-    const inserted = await bulkUpsert(valid);
+    const focused = FOCUS_STATE
+      ? valid.filter((r) => r.state === FOCUS_STATE)
+      : valid;
+    const droppedByFocus = valid.length - focused.length;
+    const inserted = await bulkUpsert(focused);
 
-    const datesSeen = Array.from(new Set(valid.map((r) => r.iso_date)));
+    const datesSeen = Array.from(new Set(focused.map((r) => r.iso_date)));
     for (const d of datesSeen) await buildDailySummary(d);
     await invalidatePrefix("mm:cache:");
 
     const durationMs = Date.now() - started;
     await sql`
       update ingest_runs
-      set finished_at = now(), fetched = ${valid.length}, inserted = ${inserted}, skipped = ${skipped}, status = 'ok'
+      set finished_at = now(), fetched = ${focused.length}, inserted = ${inserted}, skipped = ${skipped + droppedByFocus}, status = 'ok'
       where id = ${run.id}
     `;
 
     return {
       date: requestedIso,
       actual_dates: datesSeen,
-      fetched: valid.length,
+      focus_state: FOCUS_STATE,
+      fetched: focused.length,
+      dropped_by_focus: droppedByFocus,
       inserted,
       skipped,
       durationMs,

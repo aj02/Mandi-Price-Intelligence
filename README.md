@@ -213,6 +213,88 @@ vercel.json                  # cron config
 
 ---
 
+## Single-state focus mode
+
+Set the `FOCUS_STATE` env var to one of the AGMARKNET state spellings
+(`Maharashtra`, `Punjab`, `Karnataka`, …) to lock the app to that state:
+
+- **Ingest** discards every row whose `state` is not the focus state, before
+  writing to Postgres. DB stays ~95% smaller than the national feed.
+- **UI** hides the header state-picker, replaces it with a static focus badge,
+  drops the "Browse by state" section on the home page, and 404s every
+  `/s/[state]` URL except the focus state.
+- **Geo detection** is skipped — the focus state always wins.
+
+Leave `FOCUS_STATE` unset for the full multi-state national experience.
+
+Recommended pairing for a Maharashtra-only deployment:
+
+```bash
+FOCUS_STATE=Maharashtra
+TZ=Asia/Kolkata
+```
+
+---
+
+## Self-hosted via Docker
+
+A `Dockerfile` and `docker-compose.yml` are bundled. The container ships a
+standalone Next.js server plus an internal cron driver — no Vercel Cron needed.
+
+### Quick start
+
+```bash
+docker compose up -d --build
+docker compose logs -f web
+```
+
+The image:
+
+- Multi-stage build on `node:22-alpine`.
+- Runs under [`tini`](https://github.com/krallin/tini) as PID 1 for proper
+  signal handling and zombie reaping.
+- Exposes :3000 and serves the Next standalone bundle.
+- Includes [`docker/cron.sh`](docker/cron.sh) — a tiny bash loop that:
+  - waits for the web server to answer `/api/cron/status`,
+  - optionally fires an ingest on boot (`RUN_ON_BOOT=true`, default),
+  - sleeps until `CRON_INGEST_HOUR:CRON_INGEST_MIN` (IST) and curls
+    `/api/cron/ingest` with the bearer secret,
+  - sleeps until `CRON_COMMENTARY_HOUR:CRON_COMMENTARY_MIN` and fires
+    `/api/cron/commentary`,
+  - loops forever.
+- Healthcheck pings `/api/cron/status` every 30s.
+
+### Restart policy
+
+`docker-compose.yml` sets `restart: unless-stopped` — the container comes
+back after host reboots, Docker daemon restarts, or any non-clean process
+exit. Combined with the idempotent upsert in `ingest.ts`, a missed cron
+firing is recovered automatically on the next boot via `RUN_ON_BOOT`.
+
+### Configurable env
+
+| Env                    | Default      | Purpose                                    |
+| ---------------------- | ------------ | ------------------------------------------ |
+| `FOCUS_STATE`          | unset        | Single-state filter (see above)            |
+| `TZ`                   | `Asia/Kolkata` | Container timezone (cron uses this)      |
+| `CRON_INGEST_HOUR`     | `11`         | Hour (IST) for ingest                      |
+| `CRON_INGEST_MIN`      | `0`          | Minute (IST) for ingest                    |
+| `CRON_COMMENTARY_HOUR` | `11`         | Hour for commentary                        |
+| `CRON_COMMENTARY_MIN`  | `30`         | Minute for commentary                      |
+| `RUN_ON_BOOT`          | `true`       | Fire ingest immediately on container start |
+| `INTERNAL_BASE_URL`    | `http://127.0.0.1:3000` | Where cron drives requests        |
+
+### Stop / rebuild
+
+```bash
+docker compose down
+docker compose up -d --build --force-recreate
+```
+
+Logs land in JSON-file driver, rotated at 10 MB × 5 files.
+
+---
+
 ## Going live
 
 1. Push to GitHub.

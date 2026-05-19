@@ -13,17 +13,21 @@ import { LastUpdated } from "@/components/last-updated";
 import { MandiTable } from "@/components/mandi-table";
 import { inr, num } from "@/lib/format";
 import { detectUserState } from "@/lib/geo";
+import { FOCUS_STATE } from "@/lib/focus";
 
 export const revalidate = 600;
 export const dynamic = "force-dynamic";
 
 function resolveState(slug: string): string | null {
   const guess = unslugify(slug).toLowerCase();
-  return (
+  const found =
     INDIA_STATES.find((s) => slugify(s) === slug) ??
     INDIA_STATES.find((s) => s.toLowerCase() === guess) ??
-    null
-  );
+    null;
+  if (!found) return null;
+  // Focus mode: only the focus state is accessible — every other state 404s.
+  if (FOCUS_STATE && found !== FOCUS_STATE) return null;
+  return found;
 }
 
 export async function generateMetadata(
@@ -186,5 +190,6 @@ function HeroStat({
 }
 
 export function generateStaticParams() {
-  return INDIA_STATES.map((s) => ({ state: slugify(s) }));
+  const states = FOCUS_STATE ? [FOCUS_STATE] : INDIA_STATES;
+  return states.map((s) => ({ state: slugify(s) }));
 }

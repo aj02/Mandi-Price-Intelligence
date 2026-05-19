@@ -15,6 +15,7 @@ import { CommodityCard } from "@/components/commodity-card";
 import { MspGapCard } from "@/components/msp-gap-card";
 import { inr, num } from "@/lib/format";
 import { detectUserState } from "@/lib/geo";
+import { FOCUS_STATE } from "@/lib/focus";
 
 export const revalidate = 600;
 export const dynamic = "force-dynamic";
@@ -25,10 +26,13 @@ export default async function Home() {
   const lastIngest = await getLastIngestStatus().catch(() => null);
   const { state: userState, source } = await detectUserState();
 
-  // Fallback chain: detected → first reporting state → null
-  const activeStates = date ? await getActiveStatesForDate(date) : [];
+  // Focus mode: always lead with the focus state and hide multi-state UI.
+  const activeStates = date && !FOCUS_STATE ? await getActiveStatesForDate(date) : [];
   const heroState =
-    userState ?? (activeStates[0]?.state as (typeof INDIA_STATES)[number] | undefined) ?? null;
+    FOCUS_STATE ??
+    userState ??
+    (activeStates[0]?.state as (typeof INDIA_STATES)[number] | undefined) ??
+    null;
 
   const [heroSnap, heroCommodities, mspSnaps] = await Promise.all([
     heroState && date ? getStateSnapshot(heroState, date) : Promise.resolve(null),
@@ -55,7 +59,7 @@ export default async function Home() {
           <div className="absolute right-0 top-0 -mt-20 -mr-20 h-72 w-72 rounded-full bg-brand/10 blur-3xl" aria-hidden />
           <div className="relative flex flex-wrap items-center gap-2">
             <LastUpdated date={date} finishedAt={lastIngest?.finished_at} />
-            <SourceBadge source={source} />
+            {!FOCUS_STATE && <SourceBadge source={source} />}
           </div>
           <h1 className="hero-display mt-5 text-ink">
             {heroState} mandis today.
@@ -134,13 +138,15 @@ export default async function Home() {
         </section>
       )}
 
-      {/* All states grid */}
-      <Section
-        title="Browse by state"
-        subtitle="Active mandis and commodity counts for every reporting state today."
-      >
-        <ActiveStatesGrid rows={activeStates} userState={userState} />
-      </Section>
+      {/* All states grid (hidden in single-state focus mode) */}
+      {!FOCUS_STATE && (
+        <Section
+          title="Browse by state"
+          subtitle="Active mandis and commodity counts for every reporting state today."
+        >
+          <ActiveStatesGrid rows={activeStates} userState={userState} />
+        </Section>
+      )}
 
       {/* Top gainers */}
       <Section

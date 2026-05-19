@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Wheat } from "lucide-react";
+import { MapPin, Wheat } from "lucide-react";
 import { SearchBar } from "./search-bar";
 import { StatePicker } from "./state-picker";
 import { detectUserState } from "@/lib/geo";
+import { FOCUS_STATE } from "@/lib/focus";
 
 export async function Header() {
   const { state, source } = await detectUserState();
@@ -23,6 +24,11 @@ export async function Header() {
           <span className="hidden text-base font-semibold tracking-tight text-ink sm:inline">
             Mandi Mitra
           </span>
+          {FOCUS_STATE && (
+            <span className="hidden items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold text-brand md:inline-flex">
+              <MapPin className="h-3 w-3" /> {FOCUS_STATE}
+            </span>
+          )}
         </Link>
 
         <nav className="hidden gap-1 text-sm text-ink-soft lg:flex">
@@ -50,7 +56,7 @@ export async function Header() {
           <div className="hidden flex-1 md:block md:max-w-sm">
             <SearchBar />
           </div>
-          <StatePicker current={state} hint={hint} />
+          {!FOCUS_STATE && <StatePicker current={state} hint={hint} />}
         </div>
       </div>
       <div className="border-t border-line/60 px-4 py-2 md:hidden">
