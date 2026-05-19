@@ -179,6 +179,53 @@ export async function getStateActiveMandiCount(state: string, date: string): Pro
   return rows[0]?.c ?? 0;
 }
 
+export type StateSnapshot = {
+  state: string;
+  mandi_count: number;
+  commodity_count: number;
+  district_count: number;
+  total_records: number;
+  avg_modal: number | null;
+};
+
+export async function getStateSnapshot(
+  state: string,
+  date: string,
+): Promise<StateSnapshot | null> {
+  const rows = await sql<StateSnapshot[]>`
+    select ${state}::text as state,
+           count(distinct market)::int as mandi_count,
+           count(distinct commodity)::int as commodity_count,
+           count(distinct district)::int as district_count,
+           count(*)::int as total_records,
+           avg(modal_price)::float as avg_modal
+    from prices
+    where state = ${state} and arrival_date = ${date}
+      and modal_price between 50 and 200000
+  `;
+  if (!rows[0] || rows[0].mandi_count === 0) return null;
+  return rows[0];
+}
+
+export async function getActiveStatesForDate(date: string): Promise<
+  { state: string; mandi_count: number; commodity_count: number }[]
+> {
+  return cacheJson(
+    `mm:cache:active-states:${date}`,
+    CACHE_TTL,
+    async () =>
+      sql<{ state: string; mandi_count: number; commodity_count: number }[]>`
+        select state,
+               count(distinct market)::int as mandi_count,
+               count(distinct commodity)::int as commodity_count
+        from prices
+        where arrival_date = ${date}
+        group by state
+        order by mandi_count desc
+      `,
+  );
+}
+
 export async function getTopCommoditiesByCount(date: string, limit = 200): Promise<string[]> {
   const rows = await sql<{ commodity: string }[]>`
     select commodity

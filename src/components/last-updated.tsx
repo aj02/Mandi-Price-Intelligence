@@ -1,4 +1,4 @@
-import { CalendarClock } from "lucide-react";
+import { Activity } from "lucide-react";
 import { fmtDate, fmtTimeIST } from "@/lib/format";
 
 export function LastUpdated({
@@ -9,8 +9,12 @@ export function LastUpdated({
   finishedAt?: string | null;
 }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-3 py-1 text-xs text-ink-soft">
-      <CalendarClock className="h-3.5 w-3.5 text-accent" aria-hidden />
+    <div className="inline-flex items-center gap-2 rounded-full border border-line bg-brand-soft/50 px-3 py-1 text-xs text-ink-soft">
+      <span className="relative flex h-2 w-2">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-up opacity-70" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-up" />
+      </span>
+      <Activity className="h-3.5 w-3.5 text-brand" aria-hidden />
       <span className="font-medium text-ink">{fmtDate(date)}</span>
       {finishedAt && (
         <>

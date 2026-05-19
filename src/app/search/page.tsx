@@ -69,11 +69,12 @@ export default async function SearchPage(props: PageProps<"/search">) {
 
   if (!q) {
     return (
-      <div className="mx-auto max-w-[78rem] px-4 py-12 md:px-6">
-        <h1 className="hero-display text-highlight">Search</h1>
-        <p className="mt-3 text-ink-soft">
-          Use the bar at the top to find a commodity (e.g. <em>tomato</em>, <em>tamatar</em>),
-          a mandi (<em>Nashik</em>), or a state (<em>Punjab</em>).
+      <div className="mx-auto max-w-[82rem] px-4 py-12 md:px-6">
+        <h1 className="hero-display text-ink">Search</h1>
+        <p className="mt-3 max-w-xl text-ink-soft">
+          Find a commodity (e.g. <em>tomato</em>, <em>tamatar</em>), a mandi
+          (<em>Nashik</em>), or a state (<em>Punjab</em>). Hindi, Marathi,
+          Bengali, Telugu and Tamil aliases all resolve.
         </p>
       </div>
     );
@@ -85,9 +86,9 @@ export default async function SearchPage(props: PageProps<"/search">) {
   const states = hits.filter((h) => h.kind === "state");
 
   return (
-    <div className="mx-auto max-w-[78rem] px-4 py-12 md:px-6">
-      <h1 className="hero-display text-highlight">
-        Results for <span className="text-ink">&ldquo;{q}&rdquo;</span>
+    <div className="mx-auto max-w-[82rem] px-4 py-10 md:px-6 md:py-12">
+      <h1 className="hero-display text-ink">
+        Results for <span className="text-brand">&ldquo;{q}&rdquo;</span>
       </h1>
       {aliased && (
         <p className="mt-2 text-sm text-ink-muted">
@@ -100,7 +101,9 @@ export default async function SearchPage(props: PageProps<"/search">) {
       <Bucket title="States" hits={states} hrefBase="/s" />
 
       {hits.length === 0 && (
-        <p className="mt-8 text-ink-muted">No matches. Try a shorter or different term.</p>
+        <p className="card-elev mt-8 p-6 text-sm text-ink-muted">
+          No matches. Try a shorter or different term.
+        </p>
       )}
     </div>
   );
@@ -118,15 +121,13 @@ function Bucket({
   if (!hits.length) return null;
   return (
     <section className="mt-8">
-      <h2 className="mb-3 font-[var(--font-heading)] text-xl font-semibold text-ink">
-        {title}
-      </h2>
+      <h2 className="mb-3 text-xl font-semibold text-ink">{title}</h2>
       <div className="flex flex-wrap gap-2">
         {hits.map((h) => (
           <Link
             key={`${h.kind}-${h.value}`}
             href={`${hrefBase}/${slugify(h.value)}`}
-            className="rounded-full border border-line bg-card px-3 py-1 text-sm text-ink-soft hover:border-accent/40 hover:text-ink"
+            className="rounded-full border border-line bg-card px-3 py-1.5 text-sm text-ink-soft shadow-sm transition-colors hover:border-brand/40 hover:text-ink"
           >
             {h.value}
             {h.kind === "mandi" && (

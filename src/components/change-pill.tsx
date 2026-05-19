@@ -1,24 +1,40 @@
-import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
+import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { pct } from "@/lib/format";
 
-export function ChangePill({ change }: { change: number | null | undefined }) {
+export function ChangePill({
+  change,
+  size = "sm",
+}: {
+  change: number | null | undefined;
+  size?: "sm" | "md";
+}) {
+  const padding = size === "md" ? "px-2.5 py-1" : "px-2 py-0.5";
+  const text = size === "md" ? "text-sm" : "text-xs";
+  const icon = size === "md" ? "h-3.5 w-3.5" : "h-3 w-3";
+
   if (change == null || !Number.isFinite(change)) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-ink-muted">
-        <Minus className="h-3 w-3" /> —
+      <span
+        className={`inline-flex items-center gap-1 rounded-full bg-secondary ${padding} ${text} text-ink-muted`}
+      >
+        <Minus className={icon} /> —
       </span>
     );
   }
   if (change >= 0) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-up-soft px-2 py-0.5 text-xs font-medium text-up tabular num">
-        <ArrowUpRight className="h-3 w-3" /> {pct(change)}
+      <span
+        className={`inline-flex items-center gap-1 rounded-full bg-up-soft ${padding} ${text} font-semibold text-up tabular num`}
+      >
+        <ArrowUp className={icon} /> {pct(change)}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-down-soft px-2 py-0.5 text-xs font-medium text-down tabular num">
-      <ArrowDownRight className="h-3 w-3" /> {pct(change)}
+    <span
+      className={`inline-flex items-center gap-1 rounded-full bg-down-soft ${padding} ${text} font-semibold text-down tabular num`}
+    >
+      <ArrowDown className={icon} /> {pct(change)}
     </span>
   );
 }

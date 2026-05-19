@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
-import { Input } from "./ui/input";
 
 export function SearchBar() {
   const router = useRouter();
@@ -31,17 +30,20 @@ export function SearchBar() {
   return (
     <form onSubmit={onSubmit} className="relative w-full">
       <Search
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
+        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
         aria-hidden
       />
-      <Input
+      <input
         ref={inputRef}
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Search tomato, Nashik, Punjab…  (Ctrl+K)"
+        placeholder="Search tomato, Nashik, Punjab…"
         aria-label="Search commodities, mandis, states"
-        className="h-10 rounded-full border-line bg-card pl-9 pr-3 text-sm"
+        className="h-10 w-full rounded-full border border-line bg-card pl-10 pr-14 text-sm text-ink shadow-sm placeholder:text-ink-muted focus:border-brand/60 focus:outline-none focus:ring-2 focus:ring-brand/15"
       />
+      <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-line bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-ink-muted md:inline-block">
+        Ctrl K
+      </kbd>
     </form>
   );
 }
