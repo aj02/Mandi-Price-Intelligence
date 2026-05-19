@@ -17,7 +17,24 @@ export function TrendChart({ data }: { data: Point[] }) {
   if (!data.length) {
     return (
       <div className="rounded-xl border border-line bg-card p-8 text-center text-sm text-ink-muted">
-        Not enough history yet for a trend.
+        No reporting in the last 30 days.
+      </div>
+    );
+  }
+  if (data.length === 1) {
+    const only = data[0];
+    return (
+      <div className="rounded-xl border border-line bg-card p-6">
+        <div className="text-xs uppercase tracking-wider text-ink-muted">
+          {fmtDate(only.date)} · {only.sample} mandis
+        </div>
+        <div className="num mt-1 text-3xl font-semibold text-ink">
+          {inr(only.avg_modal)}
+        </div>
+        <p className="mt-3 max-w-md text-sm text-ink-soft">
+          Only one day of data so far. Trend chart fills in as new daily
+          snapshots accumulate (one per day).
+        </p>
       </div>
     );
   }
