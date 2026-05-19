@@ -7,6 +7,7 @@ const BATCH = 1000;
 
 export type IngestResult = {
   date: string;
+  actual_dates: string[];
   fetched: number;
   inserted: number;
   skipped: number;
@@ -44,19 +45,30 @@ async function bulkUpsert(rows: ParsedRecord[]): Promise<number> {
   return inserted;
 }
 
+/**
+ * NOTE on `target`: the AGMARKNET "current daily price" resource is a single
+ * snapshot — its `filters[arrival_date]` parameter is silently ignored and
+ * the response always carries the most recent reporting day. We pass `target`
+ * through to honor any future filter support, but the canonical
+ * `arrival_date` of each row is the date the data.gov.in record itself
+ * reports. We then build daily summaries for every distinct date that
+ * actually landed.
+ */
 export async function ingestDate(target: Date): Promise<IngestResult> {
   const started = Date.now();
-  const iso = target.toISOString().slice(0, 10);
+  const requestedIso = target.toISOString().slice(0, 10);
 
   const [run] = await sql<{ id: number }[]>`
-    insert into ingest_runs (arrival_date, status) values (${iso}, 'running')
+    insert into ingest_runs (arrival_date, status) values (${requestedIso}, 'running')
     returning id
   `;
 
   try {
     const { valid, skipped } = await fetchDay(target);
     const inserted = await bulkUpsert(valid);
-    await buildDailySummary(iso);
+
+    const datesSeen = Array.from(new Set(valid.map((r) => r.iso_date)));
+    for (const d of datesSeen) await buildDailySummary(d);
     await invalidatePrefix("mm:cache:");
 
     const durationMs = Date.now() - started;
@@ -67,7 +79,8 @@ export async function ingestDate(target: Date): Promise<IngestResult> {
     `;
 
     return {
-      date: iso,
+      date: requestedIso,
+      actual_dates: datesSeen,
       fetched: valid.length,
       inserted,
       skipped,

@@ -117,14 +117,24 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/inge
 curl -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/ingest?date=2026-05-19"
 ```
 
-### Backfilling the last N days
+### Backfilling
 
-```bash
-BASE_URL=http://localhost:3000 CRON_SECRET=... node scripts/backfill.mjs 30
-```
+**There is no backfill.** The AGMARKNET data.gov.in resource is a
+single-snapshot endpoint — its `filters[arrival_date]` parameter is silently
+ignored and the response always carries only the most recent reporting day.
+`scripts/backfill.mjs` will hit the ingest endpoint N times but the same
+~10K rows for "today" will be fetched on every call, so the database only
+ever gains one new arrival_date per actual calendar day.
 
-Run this once at launch to seed the database. For a production deploy, point
-`BASE_URL` at the live URL so Vercel's longer function timeout applies.
+History accumulates forward: run ingest once per day (Vercel Cron handles
+this in production) and after 30 days you'll have 30 days of data. There is
+no way to recover earlier days from the public AGMARKNET API.
+
+If historical data is critical, options are:
+- Scrape `agmarknet.gov.in` directly (no public API, ToS-sensitive).
+- Use an alternate dataset on data.gov.in if one with historical AGMARKNET
+  data appears.
+- Buy from a commercial agri-data vendor.
 
 ### Scheduled runs (Vercel Cron)
 

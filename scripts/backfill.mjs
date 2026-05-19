@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 /**
- * Backfill ingestion for the last N days against a running deployment
- * or against a local dev server.
+ * Calls the ingest endpoint N times. Originally intended for historical
+ * backfill, but the AGMARKNET "current daily price" data.gov.in resource
+ * silently ignores its `filters[arrival_date]` parameter and always returns
+ * the most recent reporting day — so the same data is fetched N times and
+ * only one date ends up in the database. History accumulates forward by
+ * running ingest once a day (Vercel Cron handles this in production).
  *
- * Usage:
- *   BASE_URL=http://localhost:3000 CRON_SECRET=... node scripts/backfill.mjs 30
- *   BASE_URL=https://mandi-mitra.vercel.app CRON_SECRET=... node scripts/backfill.mjs 30
+ * Usage (one-shot warmup or stress-test):
+ *   BASE_URL=http://localhost:3000 CRON_SECRET=... node scripts/backfill.mjs 1
  */
 
 const baseUrl = process.env.BASE_URL ?? "http://localhost:3000";
